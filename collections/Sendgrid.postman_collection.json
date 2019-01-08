@@ -1,0 +1,376 @@
+{
+	"info": {
+		"_postman_id": "900579cd-234c-4aa8-87a5-493ae8ea2836",
+		"name": "Sendgrid",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Create contact list",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "1b4e0006-6a6f-4e6a-9076-075fb3cbf14a",
+						"exec": [
+							"pm.sendRequest(",
+							"    {",
+							"        url: pm.variables.get(\"BASE_URL\") + \"/contactdb/lists\",",
+							"        method: \"GET\",",
+							"        header: {",
+							"            \"Authorization\": \"Bearer \" + pm.variables.get(\"API_KEY\")",
+							"        }",
+							"    },",
+							"    function (err, res) {",
+							"        console.log(res.json());",
+							"        for(var i in res.json().lists) {",
+							"            pm.sendRequest(",
+							"            {",
+							"                url: pm.variables.get(\"BASE_URL\") + \"/contactdb/lists/\" + res.json().lists[i].id,",
+							"                method: \"DELETE\",",
+							"                header: {",
+							"                    \"Authorization\": \"Bearer \" + pm.variables.get(\"API_KEY\")",
+							"                }",
+							"            });",
+							"        }",
+							"    }",
+							");",
+							"",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "4f1405f0-01a4-4651-88ec-04c6ec69cf43",
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"var responseJSON = JSON.parse(responseBody);",
+							"console.log(responseJSON);",
+							"",
+							"",
+							"if(pm.response.code === 201) {",
+							"    pm.environment.set(\"LIST_ID\", responseJSON.id);",
+							"    ",
+							"    postman.setNextRequest(\"Get the contact list\");",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{API_KEY}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"List of email contacts\"\n}"
+				},
+				"url": {
+					"raw": "{{BASE_URL}}/contactdb/lists",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"contactdb",
+						"lists"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get the contact list",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "11b074db-b631-4da1-8a58-5ba40f694ae5",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"var responseJSON = JSON.parse(responseBody);",
+							"console.log(responseJSON);",
+							"",
+							"if(pm.response.code === 200) {",
+							"    pm.test(\"List ID is the same as the one obtained in previous request\", function () {",
+							"       pm.expect(responseJSON.id).to.eql(pm.environment.get(\"LIST_ID\"));",
+							"    });",
+							"    postman.setNextRequest(\"Create recipients\");",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{API_KEY}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{BASE_URL}}/contactdb/lists/{{LIST_ID}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"contactdb",
+						"lists",
+						"{{LIST_ID}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create recipients",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "0479aaf8-593f-4441-9469-460ecd6a542c",
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"   pm.response.to.have.status(201);",
+							"});",
+							"",
+							"var responseJSON = JSON.parse(responseBody);",
+							"console.log(responseJSON);",
+							"",
+							"if(pm.response.code === 201) {",
+							"    pm.test(\"No errors upon recipients creation\", function () {",
+							"       pm.expect(responseJSON.error_count).to.eql(0);",
+							"    });",
+							"",
+							"    for(var i in responseJSON.persisted_recipients) {",
+							"        pm.environment.set(\"RECIPIENT_ID_\" + i, responseJSON.persisted_recipients[i]);",
+							"    }",
+							"    ",
+							"    postman.setNextRequest(\"Add recipients to list\");",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{API_KEY}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "[\n  {\n    \"email\": \"{{USER_EMAIL_1}}\",\n    \"first_name\": \"User 1\",\n    \"last_name\": \"Example\"\n  },\n  {\n    \"email\": \"{{USER_EMAIL_2}}\",\n    \"first_name\": \"User 2\",\n    \"last_name\": \"Example\"\n  }\n]"
+				},
+				"url": {
+					"raw": "{{BASE_URL}}/contactdb/recipients",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"contactdb",
+						"recipients"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add recipients to list",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "0d6484b3-aaff-4644-ba13-cbe3818eb12e",
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"   pm.response.to.have.status(201);",
+							"});",
+							"",
+							"if(pm.response.code === 201) {",
+							"    postman.setNextRequest(\"Create a campaign\");",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{API_KEY}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "[\n\t\"{{RECIPIENT_ID_0}}\",\n\t\"{{RECIPIENT_ID_1}}\"\n]"
+				},
+				"url": {
+					"raw": "{{BASE_URL}}/contactdb/lists/:list_id/recipients",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"contactdb",
+						"lists",
+						":list_id",
+						"recipients"
+					],
+					"variable": [
+						{
+							"key": "list_id",
+							"value": "{{LIST_ID}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create a campaign",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "65c8b894-fa8b-42c5-925c-fea02e0506be",
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"var responseJSON = JSON.parse(responseBody);",
+							"",
+							"if(pm.response.code === 201) {",
+							"    pm.environment.set(\"CAMPAIGN_ID\", responseJSON.id);",
+							"    postman.setNextRequest(\"Send campaign\");",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{API_KEY}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"title\": \"January Newsletter\",\n  \"subject\": \"Happy New Year!\",\n  \"sender_id\": {{SENDER_ID}},\n  \"list_ids\": [\n    {{LIST_ID}}\n  ],\n  \"categories\": [\n    \"2019 Content\"\n  ],\n  \"suppression_group_id\": {{UNSUBSCRIBE_GROUP_ID}},\n  \"custom_unsubscribe_url\": \"\",\n  \"html_content\": \"<html><head><title></title><b>YAY!</b></head><body><p>Please attend Quality Talks in 2019!</p></body><%asm_global_unsubscribe_raw_url%></html>\",\n  \"plain_content\": \"It's a great way to learn! <%asm_global_unsubscribe_raw_url%>\"\n}"
+				},
+				"url": {
+					"raw": "{{BASE_URL}}/campaigns",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"campaigns"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Send campaign",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "29889d49-efa2-4dc0-bc16-c975511489c2",
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"   pm.response.to.have.status(201); ",
+							"});",
+							"",
+							"pm.test(\"Got Scheduling ID and status is Scheduled\", function () {",
+							"   var responseJSON = JSON.parse(responseBody);",
+							"   pm.expect(responseJSON.status).to.eql(\"Scheduled\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{API_KEY}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{BASE_URL}}/campaigns/:campaign_id/schedules/now",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"campaigns",
+						":campaign_id",
+						"schedules",
+						"now"
+					],
+					"variable": [
+						{
+							"key": "campaign_id",
+							"value": "{{CAMPAIGN_ID}}"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

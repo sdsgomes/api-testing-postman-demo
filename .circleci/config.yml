@@ -1,0 +1,16 @@
+version: 2.1
+orbs:
+  newman: postman/newman@0.0.1
+jobs:
+  build:
+    # use the official newman docker image via newman/postman-newman-docker executor
+    executor: newman/postman-newman-docker
+    
+    steps:
+      # checkout project from git
+      - checkout
+
+      # use newman-run command
+      - newman/newman-run:
+          collection: ./collections/Sendgrid.postman_collection.json
+          environment: ./environments/Sendgrid-demo.postman_environment.json

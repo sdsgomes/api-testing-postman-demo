@@ -1,0 +1,8 @@
+version: '2.0'
+services:
+ newman:
+  image: "postman/newman"  # pulls "postman/newman" docker image from Docker Hub (https://hub.docker.com/r/postman/newman/)
+  volumes:
+    - "./collections:/etc/newman/collections"   # maps collections folder to /etc/newman/collections directory from container
+    - "./environments:/etc/newman/environments"   # maps environments folder to /etc/newman directory/environment from container
+  entrypoint: "newman run /etc/newman/collections/Sendgrid.postman_collection.json -e /etc/newman/environments/Sendgrid-demo.postman_environment.json" #sets the command and parameters that will be executed first when a container is run
